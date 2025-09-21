@@ -1,0 +1,43 @@
+services:
+  # データベースサービス（PostgreSQL）
+  db:
+    image: postgres:15-alpine
+    container_name: todo-db
+    environment:
+      POSTGRES_DB: todo_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - todo-network
+
+  # バックエンドアプリケーションサービス
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: todo-backend
+    environment:
+      DATABASE_URL: "postgresql://postgres:password@db:5432/todo_db"
+      NODE_ENV: development
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+    networks:
+      - todo-network
+    command: sh -c "npx prisma migrate dev --name init && npm run dev"
+
+volumes:
+  postgres_data:
+
+networks:
+  todo-network:
+    driver: bridge
