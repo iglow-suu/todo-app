@@ -1,22 +1,22 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '../generated/prisma/index.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// ユーザー登録
+// resister
 router.post('/register', async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
-    // バリデーション
+    // validation
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // 既存ユーザーのチェック
+    // check existing user
     const existingUser = await prisma.user.findUnique({
       where: { email }
     });
@@ -25,11 +25,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // パスワードのハッシュ化
+    // hash password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // ユーザー作成
+    // create user
     const user = await prisma.user.create({
       data: {
         email,
@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
       }
     });
 
-    // JWTトークンの生成
+    // generate JWT token
     const jwtSecret = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
     const token = jwt.sign(
       { userId: user.id, email: user.email },
@@ -61,17 +61,17 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ログイン
+// login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // バリデーション
+    // validation
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // ユーザーの検索
+    // search user
     const user = await prisma.user.findUnique({
       where: { email }
     });
@@ -80,14 +80,14 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // パスワードの確認
+    // check password
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // JWTトークンの生成
+    // generate JWT token
     const jwtSecret = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
     const token = jwt.sign(
       { userId: user.id, email: user.email },
@@ -110,7 +110,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ログアウト（クライアント側でトークンを削除するため、サーバー側では特別な処理は不要）
+// logout (no special processing is needed on the server side because the client side removes the token)
 router.post('/logout', (req, res) => {
   res.json({ message: 'Logout successful' });
 });

@@ -1,14 +1,14 @@
 import express from 'express';
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '../generated/prisma/index.js';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// 全てのルートで認証が必要
+// authentication is required for all routes
 router.use(authenticateToken);
 
-// TODO一覧取得
+// get all todos
 router.get('/', async (req: AuthRequest, res) => {
   try {
     const todos = await prisma.todo.findMany({
@@ -23,7 +23,7 @@ router.get('/', async (req: AuthRequest, res) => {
   }
 });
 
-// TODO作成
+// create a todo
 router.post('/', async (req: AuthRequest, res) => {
   try {
     const { title, description } = req.body;
@@ -47,13 +47,13 @@ router.post('/', async (req: AuthRequest, res) => {
   }
 });
 
-// TODO更新
+// TODO update
 router.put('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const { title, description, completed } = req.body;
 
-    // TODOの存在確認と所有者確認
+    // check if the todo exists and if the user owns it
     const existingTodo = await prisma.todo.findFirst({
       where: { id, userId: req.userId }
     });
@@ -78,12 +78,12 @@ router.put('/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// TODO削除
+// delete a todo
 router.delete('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
 
-    // TODOの存在確認と所有者確認
+    // check if the todo exists and if the user owns it
     const existingTodo = await prisma.todo.findFirst({
       where: { id, userId: req.userId }
     });
