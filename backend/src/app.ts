@@ -22,7 +22,18 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Debug routes
+app.get('/debug/routes', (req, res) => {
+  res.json({ 
+    message: 'Debug endpoint working',
+    availableRoutes: ['/api/auth', '/api/todos', '/health', '/']
+  });
+});
+
 // Routes
+console.log('Setting up routes...');
+console.log('AuthRoutes type:', typeof authRoutes);
+console.log('TodoRoutes type:', typeof todoRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/todos', todoRoutes);
 
