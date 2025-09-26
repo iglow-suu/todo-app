@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Route } from "./+types/home";
+import type { User } from '../lib/api';
 import LoginForm from '../components/LoginForm';
 import RegisterForm from '../components/RegisterForm';
 import TodoForm from '../components/TodoForm';
@@ -17,7 +18,7 @@ export function meta({}: Route.MetaArgs) {
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {

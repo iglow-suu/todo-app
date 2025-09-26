@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Todo, todoApi } from '../lib/api';
+import type { Todo } from '../lib/api';
+import { todoApi } from '../lib/api';
 
 interface TodoListProps {
   refreshTrigger: number;

@@ -1,4 +1,4 @@
-import { User } from './api';
+import type { User } from './api';
 
 export const AuthStorage = {
   setToken: (token: string) => {
