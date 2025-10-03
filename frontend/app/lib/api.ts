@@ -89,11 +89,14 @@ export interface User {
   name?: string;
 }
 
+export type Priority = 'LOW' | 'MEDIUM' | 'HIGH';
+
 export interface Todo {
   id: string;
   title: string;
   description?: string;
   completed: boolean;
+  priority: Priority;
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -126,11 +129,11 @@ export const todoApi = {
     return apiClient.get<Todo[]>('/todos');
   },
 
-  create: async (data: { title: string; description?: string }) => {
+  create: async (data: { title: string; description?: string; priority?: Priority }) => {
     return apiClient.post<Todo>('/todos', data);
   },
 
-  update: async (id: string, data: { title?: string; description?: string; completed?: boolean }) => {
+  update: async (id: string, data: { title?: string; description?: string; completed?: boolean; priority?: Priority }) => {
     return apiClient.put<Todo>(`/todos/${id}`, data);
   },
 

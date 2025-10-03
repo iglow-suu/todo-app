@@ -26,7 +26,7 @@ router.get('/', async (req: AuthRequest, res) => {
 // create a todo
 router.post('/', async (req: AuthRequest, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description, priority } = req.body;
 
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
@@ -36,6 +36,7 @@ router.post('/', async (req: AuthRequest, res) => {
       data: {
         title,
         description: description || null,
+        priority: priority || 'MEDIUM',
         userId: req.userId!
       }
     });
@@ -51,7 +52,7 @@ router.post('/', async (req: AuthRequest, res) => {
 router.put('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
-    const { title, description, completed } = req.body;
+    const { title, description, completed, priority } = req.body;
 
     // check if the todo exists and if the user owns it
     const existingTodo = await prisma.todo.findFirst({
@@ -67,7 +68,8 @@ router.put('/:id', async (req: AuthRequest, res) => {
       data: {
         title: title !== undefined ? title : existingTodo.title,
         description: description !== undefined ? description : existingTodo.description,
-        completed: completed !== undefined ? completed : existingTodo.completed
+        completed: completed !== undefined ? completed : existingTodo.completed,
+        priority: priority !== undefined ? priority : existingTodo.priority || 'MEDIUM'
       }
     });
 

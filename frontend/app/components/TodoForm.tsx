@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { todoApi } from '../lib/api';
+import type { Priority } from '../lib/api';
 
 interface TodoFormProps {
   onTodoCreated: () => void;
@@ -8,8 +9,10 @@ interface TodoFormProps {
 export default function TodoForm({ onTodoCreated }: TodoFormProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<Priority>('MEDIUM');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +27,8 @@ export default function TodoForm({ onTodoCreated }: TodoFormProps) {
 
     const result = await todoApi.create({
       title: title.trim(),
-      description: description.trim() || undefined
+      description: description.trim() || undefined,
+      priority: priority
     });
 
     if (result.error) {
@@ -32,6 +36,7 @@ export default function TodoForm({ onTodoCreated }: TodoFormProps) {
     } else {
       setTitle('');
       setDescription('');
+      setPriority('MEDIUM');
       onTodoCreated();
     }
 
@@ -47,6 +52,7 @@ export default function TodoForm({ onTodoCreated }: TodoFormProps) {
           {error}
         </div>
       )}
+
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -56,11 +62,14 @@ export default function TodoForm({ onTodoCreated }: TodoFormProps) {
           <input
             type="text"
             id="title"
+            name="title"
+            autoComplete="off"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="何をしますか？"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             disabled={isLoading}
+            style={{ color: '#111827', backgroundColor: '#ffffff' }}
           />
         </div>
         
@@ -70,13 +79,35 @@ export default function TodoForm({ onTodoCreated }: TodoFormProps) {
           </label>
           <textarea
             id="description"
+            name="description"
+            autoComplete="off"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="詳細を入力してください..."
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-900 bg-white"
             disabled={isLoading}
+            style={{ color: '#111827', backgroundColor: '#ffffff' }}
           />
+        </div>
+        
+        <div>
+          <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
+            優先度
+          </label>
+          <select
+            id="priority"
+            name="priority"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as Priority)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+            disabled={isLoading}
+            style={{ color: '#111827', backgroundColor: '#ffffff' }}
+          >
+            <option value="LOW">🟢 低</option>
+            <option value="MEDIUM">🟡 中</option>
+            <option value="HIGH">🔴 高</option>
+          </select>
         </div>
         
         <button
