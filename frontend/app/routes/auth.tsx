@@ -54,19 +54,17 @@ export default function Auth() {
         </div>
 
         {/* 認証フォーム */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          {showRegister ? (
-            <RegisterForm
-              onSuccess={handleAuthSuccess}
-              onSwitchToLogin={() => setShowRegister(false)}
-            />
-          ) : (
-            <LoginForm
-              onSuccess={handleAuthSuccess}
-              onSwitchToRegister={() => setShowRegister(true)}
-            />
-          )}
-        </div>
+        {showRegister ? (
+          <RegisterForm
+            onSuccess={handleAuthSuccess}
+            onSwitchToLogin={() => setShowRegister(false)}
+          />
+        ) : (
+          <LoginForm
+            onSuccess={handleAuthSuccess}
+            onSwitchToRegister={() => setShowRegister(true)}
+          />
+        )}
 
         {/* フッター */}
         <div className="text-center mt-6 text-sm text-gray-500">
