@@ -26,10 +26,16 @@ router.get('/', async (req: AuthRequest, res) => {
 // create a todo
 router.post('/', async (req: AuthRequest, res) => {
   try {
-    const { title, description, priority } = req.body;
+    const { title, description, priority, completed, status } = req.body;
 
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
+    }
+
+    // statusが指定されている場合はそれを使用、そうでなければcompletedから推測
+    let finalStatus = status;
+    if (!finalStatus && completed !== undefined) {
+      finalStatus = completed ? 'COMPLETED' : 'PENDING';
     }
 
     const todo = await prisma.todo.create({
@@ -37,6 +43,8 @@ router.post('/', async (req: AuthRequest, res) => {
         title,
         description: description || null,
         priority: priority || 'MEDIUM',
+        completed: completed || false,
+        status: finalStatus || 'PENDING',
         userId: req.userId!
       }
     });
@@ -52,7 +60,7 @@ router.post('/', async (req: AuthRequest, res) => {
 router.put('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
-    const { title, description, completed, priority } = req.body;
+    const { title, description, completed, priority, status } = req.body;
 
     // check if the todo exists and if the user owns it
     const existingTodo = await prisma.todo.findFirst({
@@ -63,13 +71,20 @@ router.put('/:id', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Todo not found' });
     }
 
+    // statusが指定されている場合はそれを使用、そうでなければcompletedから推測
+    let finalStatus = status;
+    if (!finalStatus && completed !== undefined) {
+      finalStatus = completed ? 'COMPLETED' : 'PENDING';
+    }
+
     const todo = await prisma.todo.update({
       where: { id },
       data: {
         title: title !== undefined ? title : existingTodo.title,
         description: description !== undefined ? description : existingTodo.description,
         completed: completed !== undefined ? completed : existingTodo.completed,
-        priority: priority !== undefined ? priority : existingTodo.priority || 'MEDIUM'
+        priority: priority !== undefined ? priority : existingTodo.priority || 'MEDIUM',
+        status: finalStatus !== undefined ? finalStatus : existingTodo.status || 'PENDING'
       }
     });
 

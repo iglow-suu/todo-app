@@ -26,11 +26,18 @@ enum Priority {
   HIGH
 }
 
+enum Status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
 model Todo {
   id          String   @id @default(cuid())
   title       String
   description String?
   completed   Boolean  @default(false)
+  status      Status   @default(PENDING)
   priority    Priority @default(MEDIUM)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -91,11 +91,14 @@ export interface User {
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH';
 
+export type Status = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+
 export interface Todo {
   id: string;
   title: string;
   description?: string;
-  completed: boolean;
+  completed: boolean; // 既存の互換性のため残す
+  status: Status;
   priority: Priority;
   userId: string;
   createdAt: string;
@@ -129,11 +132,11 @@ export const todoApi = {
     return apiClient.get<Todo[]>('/todos');
   },
 
-  create: async (data: { title: string; description?: string; priority?: Priority }) => {
+  create: async (data: { title: string; description?: string; priority?: Priority; status?: Status }) => {
     return apiClient.post<Todo>('/todos', data);
   },
 
-  update: async (id: string, data: { title?: string; description?: string; completed?: boolean; priority?: Priority }) => {
+  update: async (id: string, data: { title?: string; description?: string; completed?: boolean; priority?: Priority; status?: Status }) => {
     return apiClient.put<Todo>(`/todos/${id}`, data);
   },
 

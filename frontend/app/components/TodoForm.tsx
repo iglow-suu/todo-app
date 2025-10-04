@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { todoApi } from '../lib/api';
-import type { Priority } from '../lib/api';
+import type { Priority, Status } from '../lib/api';
 
 interface TodoFormProps {
   onTodoCreated: () => void;
@@ -10,6 +10,7 @@ export default function TodoForm({ onTodoCreated }: TodoFormProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('MEDIUM');
+  const [status, setStatus] = useState<Status>('PENDING');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,7 +29,8 @@ export default function TodoForm({ onTodoCreated }: TodoFormProps) {
     const result = await todoApi.create({
       title: title.trim(),
       description: description.trim() || undefined,
-      priority: priority
+      priority: priority,
+      status: status
     });
 
     if (result.error) {
@@ -37,6 +39,7 @@ export default function TodoForm({ onTodoCreated }: TodoFormProps) {
       setTitle('');
       setDescription('');
       setPriority('MEDIUM');
+      setStatus('PENDING');
       onTodoCreated();
     }
 
@@ -109,7 +112,26 @@ export default function TodoForm({ onTodoCreated }: TodoFormProps) {
             <option value="HIGH">🔴 高</option>
           </select>
         </div>
-        
+
+        <div>
+          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+            ステータス
+          </label>
+          <select
+            id="status"
+            name="status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as Status)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+            disabled={isLoading}
+            style={{ color: '#111827', backgroundColor: '#ffffff' }}
+          >
+            <option value="PENDING">⏳ 未完了</option>
+            <option value="IN_PROGRESS">🚀 進行中</option>
+            <option value="COMPLETED">✅ 完了済み</option>
+          </select>
+        </div>
+
         <button
           type="submit"
           disabled={isLoading || !title.trim()}

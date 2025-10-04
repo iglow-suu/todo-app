@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import type { Todo, Priority } from '../lib/api';
+import type { Todo, Priority, Status } from '../lib/api';
 import { todoApi } from '../lib/api';
+import TodoFilter, { type FilterOptions } from './TodoFilter';
 
 interface TodoListProps {
   refreshTrigger: number;
@@ -16,6 +17,19 @@ const getPriorityDisplay = (priority: Priority) => {
       return { emoji: '🟢', text: '低', color: 'border-green-500 bg-green-50' };
     default:
       return { emoji: '🟡', text: '中', color: 'border-yellow-500 bg-yellow-50' };
+  }
+};
+
+const getStatusDisplay = (status: Status) => {
+  switch (status) {
+    case 'PENDING':
+      return { emoji: '⏳', text: '未完了', color: 'border-gray-400 bg-gray-50' };
+    case 'IN_PROGRESS':
+      return { emoji: '🚀', text: '進行中', color: 'border-blue-500 bg-blue-50' };
+    case 'COMPLETED':
+      return { emoji: '✅', text: '完了済み', color: 'border-green-500 bg-green-50' };
+    default:
+      return { emoji: '⏳', text: '未完了', color: 'border-gray-400 bg-gray-50' };
   }
 };
 
@@ -36,6 +50,12 @@ export default function TodoList({ refreshTrigger }: TodoListProps) {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editPriority, setEditPriority] = useState<Priority>('MEDIUM');
+  const [editStatus, setEditStatus] = useState<Status>('PENDING');
+  const [filters, setFilters] = useState<FilterOptions>({
+    priority: 'ALL',
+    status: 'ALL',
+    search: ''
+  });
 
   const fetchTodos = async () => {
     setIsLoading(true);
@@ -87,6 +107,7 @@ export default function TodoList({ refreshTrigger }: TodoListProps) {
     setEditTitle(todo.title);
     setEditDescription(todo.description || '');
     setEditPriority(todo.priority || 'MEDIUM');
+    setEditStatus(todo.status || 'PENDING');
   };
 
   const handleCancelEdit = () => {
@@ -94,6 +115,7 @@ export default function TodoList({ refreshTrigger }: TodoListProps) {
     setEditTitle('');
     setEditDescription('');
     setEditPriority('MEDIUM');
+    setEditStatus('PENDING');
   };
 
   const handleSaveEdit = async (todoId: string) => {
@@ -105,7 +127,8 @@ export default function TodoList({ refreshTrigger }: TodoListProps) {
     const result = await todoApi.update(todoId, {
       title: editTitle.trim(),
       description: editDescription.trim() || undefined,
-      priority: editPriority
+      priority: editPriority,
+      status: editStatus
     });
 
     if (result.error) {
@@ -150,30 +173,81 @@ export default function TodoList({ refreshTrigger }: TodoListProps) {
     );
   }
 
-  if (todos.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        <p>まだTODOがありません。</p>
-        <p>上のフォームから新しいTODOを追加してみましょう！</p>
-      </div>
-    );
-  }
+  // フィルタリング機能
+  const applyFilters = (todoList: Todo[]) => {
+    return todoList.filter(todo => {
+      // 優先度フィルター
+      if (filters.priority !== 'ALL' && todo.priority !== filters.priority) {
+        return false;
+      }
 
-  // 優先度順でソート（高→中→低）
-  const sortedTodos = [...todos].sort((a, b) => {
+      // ステータスフィルター
+      if (filters.status !== 'ALL') {
+        const todoStatus = todo.status || (todo.completed ? 'COMPLETED' : 'PENDING');
+        if (todoStatus !== filters.status) {
+          return false;
+        }
+      }
+
+      // 検索フィルター
+      if (filters.search) {
+        const searchTerm = filters.search.toLowerCase();
+        const matchesTitle = todo.title.toLowerCase().includes(searchTerm);
+        const matchesDescription = todo.description?.toLowerCase().includes(searchTerm) || false;
+        if (!matchesTitle && !matchesDescription) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
+  // フィルタリング後にソート
+  const filteredTodos = applyFilters(todos);
+  const sortedTodos = [...filteredTodos].sort((a, b) => {
     if (a.completed !== b.completed) {
       return a.completed ? 1 : -1; // 未完了を上に
     }
     return getPriorityOrder(b.priority || 'MEDIUM') - getPriorityOrder(a.priority || 'MEDIUM');
   });
 
+  const handleFilterChange = (newFilters: FilterOptions) => {
+    setFilters(newFilters);
+  };
+
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">
-        TODOリスト ({todos.length}個)
-      </h3>
+      {/* フィルターコンポーネント */}
+      <TodoFilter onFilterChange={handleFilterChange} />
       
-      {sortedTodos.map((todo) => {
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-gray-800">
+          TODOリスト ({sortedTodos.length}/{todos.length}個)
+        </h3>
+        {filteredTodos.length !== todos.length && (
+          <span className="text-sm text-gray-500">
+            {todos.length - filteredTodos.length}個を非表示
+          </span>
+        )}
+      </div>
+      
+      {sortedTodos.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          {todos.length === 0 ? (
+            <>
+              <p>まだTODOがありません。</p>
+              <p>上のフォームから新しいTODOを追加してみましょう！</p>
+            </>
+          ) : (
+            <>
+              <p>フィルター条件に一致するTODOがありません。</p>
+              <p>フィルターを変更するか、新しいTODOを追加してください。</p>
+            </>
+          )}
+        </div>
+      ) : (
+        sortedTodos.map((todo) => {
         // 既存データの互換性を確保
         const safeTodo = {
           ...todo,
@@ -233,6 +307,17 @@ export default function TodoList({ refreshTrigger }: TodoListProps) {
                       <option value="MEDIUM">🟡 中</option>
                       <option value="HIGH">🔴 高</option>
                     </select>
+                    <select
+                      name="editStatus"
+                      value={editStatus}
+                      onChange={(e) => setEditStatus(e.target.value as Status)}
+                      className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                      style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                    >
+                      <option value="PENDING">⏳ 未完了</option>
+                      <option value="IN_PROGRESS">🚀 進行中</option>
+                      <option value="COMPLETED">✅ 完了済み</option>
+                    </select>
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleSaveEdit(safeTodo.id)}
@@ -257,9 +342,18 @@ export default function TodoList({ refreshTrigger }: TodoListProps) {
                       }`}>
                         {safeTodo.title}
                       </h4>
-                      <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                        {priorityDisplay.emoji} {priorityDisplay.text}
-                      </span>
+                      <div className="flex space-x-1">
+                        <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                          {priorityDisplay.emoji} {priorityDisplay.text}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          safeTodo.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                          safeTodo.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
+                          'bg-orange-100 text-orange-700'
+                        }`}>
+                          {getStatusDisplay(safeTodo.status || 'PENDING').emoji} {getStatusDisplay(safeTodo.status || 'PENDING').text}
+                        </span>
+                      </div>
                     </div>
                     {safeTodo.description && (
                       <p className={`mt-1 text-sm ${
@@ -305,7 +399,8 @@ export default function TodoList({ refreshTrigger }: TodoListProps) {
             </div>
           </div>
         );
-      })}
+      })
+      )}
     </div>
   );
 }
