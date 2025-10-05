@@ -61,6 +61,10 @@ export default function Todos() {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const handleGroupDeleted = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   // SSR中またはロード中は何も表示しない
   if (loading || isAuthenticated === null) {
     return (
@@ -122,6 +126,7 @@ export default function Todos() {
                   <GroupList 
                     onGroupSelect={handleGroupSelect}
                     selectedGroupId={selectedGroup?.id}
+                    onGroupDeleted={handleGroupDeleted}
                   />
                   <div className="bg-white rounded-lg shadow-md p-6">
                     <button
