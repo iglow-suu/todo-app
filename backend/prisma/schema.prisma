@@ -9,13 +9,19 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  todos     Todo[]
+  id              String        @id @default(cuid())
+  email           String        @unique
+  password        String
+  name            String?
+  avatar          String?       // プロフィール画像URL
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  // リレーション
+  createdGroups   Group[]       @relation("GroupCreator")
+  groupMemberships GroupMember[]
+  createdTodos    Todo[]        @relation("TodoCreator")
+  assignedTodos   Todo[]        @relation("TodoAssignee")
 
   @@map("users")
 }
@@ -32,6 +38,41 @@ enum Status {
   COMPLETED
 }
 
+enum GroupRole {
+  OWNER    // グループ作成者・管理者
+  ADMIN    // 管理者（メンバー招待・削除可能）
+  MEMBER   // 一般メンバー
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?  @default("#3B82F6")
+  createdBy   String   // 作成者のユーザーID
+  creator     User     @relation("GroupCreator", fields: [createdBy], references: [id])
+  members     GroupMember[]
+  todos       Todo[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String    @id @default(cuid())
+  userId   String
+  groupId  String
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+  
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@map("group_members")
+}
+
 model Todo {
   id          String   @id @default(cuid())
   title       String
@@ -39,8 +80,14 @@ model Todo {
   completed   Boolean  @default(false)
   status      Status   @default(PENDING)
   priority    Priority @default(MEDIUM)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdBy   String   // 作成者
+  assignedTo  String?  // 担当者（任意）
+  groupId     String   // 所属グループ
+  
+  creator     User     @relation("TodoCreator", fields: [createdBy], references: [id])
+  assignee    User?    @relation("TodoAssignee", fields: [assignedTo], references: [id])
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

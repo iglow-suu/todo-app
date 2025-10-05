@@ -100,7 +100,9 @@ export interface Todo {
   completed: boolean; // 既存の互換性のため残す
   status: Status;
   priority: Priority;
-  userId: string;
+  createdBy: string; // 作成者
+  assignedTo?: string; // 担当者（任意）
+  groupId: string; // 所属グループ
   createdAt: string;
   updatedAt: string;
 }

@@ -11,8 +11,18 @@ router.use(authenticateToken);
 // get all todos
 router.get('/', async (req: AuthRequest, res) => {
   try {
-    const todos = await prisma.todo.findMany({
+    // ユーザーが所属するグループのIDを取得
+    const userGroups = await prisma.groupMember.findMany({
       where: { userId: req.userId },
+      select: { groupId: true }
+    });
+    
+    const groupIds = userGroups.map(gm => gm.groupId);
+
+    const todos = await prisma.todo.findMany({
+      where: { 
+        groupId: { in: groupIds }
+      },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -26,10 +36,40 @@ router.get('/', async (req: AuthRequest, res) => {
 // create a todo
 router.post('/', async (req: AuthRequest, res) => {
   try {
-    const { title, description, priority, completed, status } = req.body;
+    const { title, description, priority, completed, status, groupId, assignedTo } = req.body;
 
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
+    }
+
+    // デフォルトグループを取得（指定されていない場合）
+    let targetGroupId = groupId;
+    if (!targetGroupId) {
+      const userPersonalGroup = await prisma.groupMember.findFirst({
+        where: { 
+          userId: req.userId,
+          role: 'OWNER'
+        },
+        select: { groupId: true }
+      });
+      
+      if (!userPersonalGroup) {
+        return res.status(400).json({ error: 'No personal group found' });
+      }
+      
+      targetGroupId = userPersonalGroup.groupId;
+    }
+
+    // グループのメンバーかどうか確認
+    const isGroupMember = await prisma.groupMember.findFirst({
+      where: {
+        userId: req.userId,
+        groupId: targetGroupId
+      }
+    });
+
+    if (!isGroupMember) {
+      return res.status(403).json({ error: 'Not a member of this group' });
     }
 
     // statusが指定されている場合はそれを使用、そうでなければcompletedから推測
@@ -45,7 +85,9 @@ router.post('/', async (req: AuthRequest, res) => {
         priority: priority || 'MEDIUM',
         completed: completed || false,
         status: finalStatus || 'PENDING',
-        userId: req.userId!
+        createdBy: req.userId!,
+        assignedTo: assignedTo || req.userId!, // デフォルトは作成者
+        groupId: targetGroupId
       }
     });
 
@@ -60,11 +102,20 @@ router.post('/', async (req: AuthRequest, res) => {
 router.put('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
-    const { title, description, completed, priority, status } = req.body;
+    const { title, description, completed, priority, status, assignedTo } = req.body;
 
-    // check if the todo exists and if the user owns it
+    // TODOが存在し、ユーザーが所属するグループのTODOかどうか確認
     const existingTodo = await prisma.todo.findFirst({
-      where: { id, userId: req.userId }
+      where: { 
+        id,
+        group: {
+          members: {
+            some: {
+              userId: req.userId
+            }
+          }
+        }
+      }
     });
 
     if (!existingTodo) {
@@ -84,7 +135,8 @@ router.put('/:id', async (req: AuthRequest, res) => {
         description: description !== undefined ? description : existingTodo.description,
         completed: completed !== undefined ? completed : existingTodo.completed,
         priority: priority !== undefined ? priority : existingTodo.priority || 'MEDIUM',
-        status: finalStatus !== undefined ? finalStatus : existingTodo.status || 'PENDING'
+        status: finalStatus !== undefined ? finalStatus : existingTodo.status || 'PENDING',
+        assignedTo: assignedTo !== undefined ? assignedTo : existingTodo.assignedTo
       }
     });
 
@@ -100,9 +152,18 @@ router.delete('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
 
-    // check if the todo exists and if the user owns it
+    // TODOが存在し、ユーザーが所属するグループのTODOかどうか確認
     const existingTodo = await prisma.todo.findFirst({
-      where: { id, userId: req.userId }
+      where: { 
+        id,
+        group: {
+          members: {
+            some: {
+              userId: req.userId
+            }
+          }
+        }
+      }
     });
 
     if (!existingTodo) {
