@@ -21,6 +21,10 @@ declare global {
   var afterEach: any;
 }
 
+// 簡易フラグ: DB 依存テストを実行するか（デフォルトはスキップ）
+const USE_DB = process.env.USE_DB_TESTS === 'true';
+const d = USE_DB ? describe : describe.skip;
+
 // テスト用アプリケーション作成（実際のデータベース接続）
 const createTestApp = () => {
   const app = express();

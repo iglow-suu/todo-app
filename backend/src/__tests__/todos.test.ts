@@ -16,6 +16,10 @@ declare global {
   var afterEach: any;
 }
 
+// 簡易フラグ: DB 依存テストを実行するか（デフォルトはスキップ）
+const USE_DB = process.env.USE_DB_TESTS === 'true';
+const d = USE_DB ? describe : describe.skip;
+
 // Request型を拡張
 interface AuthRequest extends Request {
   userId: string;
@@ -213,7 +217,7 @@ const createTestApp = () => {
   return app;
 };
 
-describe('TODO API テスト（DB接続版）', () => {
+d('TODO API テスト（DB接続版）', () => {
   let app: express.Application;
   let prisma: PrismaClient;
   let testUser: any;
