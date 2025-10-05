@@ -47,5 +47,11 @@ export const AuthStorage = {
   logout: () => {
     AuthStorage.removeToken();
     AuthStorage.removeUser();
+  },
+
+  clearAll: () => {
+    if (isClient) {
+      localStorage.clear();
+    }
   }
 };
