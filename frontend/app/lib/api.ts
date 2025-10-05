@@ -102,6 +102,31 @@ export type Priority = 'LOW' | 'MEDIUM' | 'HIGH';
 
 export type Status = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
 
+export type GroupRole = 'OWNER' | 'ADMIN' | 'MEMBER';
+
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  createdBy: string;
+  creator: User;
+  members: GroupMember[];
+  todos: Todo[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupMember {
+  id: string;
+  userId: string;
+  groupId: string;
+  role: GroupRole;
+  joinedAt: string;
+  user: User;
+  group: Group;
+}
+
 export interface Todo {
   id: string;
   title: string;
@@ -137,17 +162,52 @@ export const authApi = {
   }
 };
 
+// Group API
+export const groupApi = {
+  getAll: async () => {
+    return apiClient.get<Group[]>('/groups');
+  },
+
+  getById: async (id: string) => {
+    return apiClient.get<Group>(`/groups/${id}`);
+  },
+
+  create: async (data: { name: string; description?: string; color?: string }) => {
+    return apiClient.post<Group>('/groups', data);
+  },
+
+  update: async (id: string, data: { name?: string; description?: string; color?: string }) => {
+    return apiClient.put<Group>(`/groups/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/groups/${id}`);
+  },
+
+  inviteMember: async (groupId: string, data: { email: string; role?: GroupRole }) => {
+    return apiClient.post<GroupMember>(`/groups/${groupId}/invite`, data);
+  },
+
+  removeMember: async (groupId: string, memberId: string) => {
+    return apiClient.delete(`/groups/${groupId}/members/${memberId}`);
+  },
+
+  updateMemberRole: async (groupId: string, memberId: string, role: GroupRole) => {
+    return apiClient.put<GroupMember>(`/groups/${groupId}/members/${memberId}`, { role });
+  }
+};
+
 // Todo API
 export const todoApi = {
   getAll: async () => {
     return apiClient.get<Todo[]>('/todos');
   },
 
-  create: async (data: { title: string; description?: string; priority?: Priority; status?: Status }) => {
+  create: async (data: { title: string; description?: string; priority?: Priority; status?: Status; groupId?: string; assignedTo?: string }) => {
     return apiClient.post<Todo>('/todos', data);
   },
 
-  update: async (id: string, data: { title?: string; description?: string; completed?: boolean; priority?: Priority; status?: Status }) => {
+  update: async (id: string, data: { title?: string; description?: string; completed?: boolean; priority?: Priority; status?: Status; assignedTo?: string }) => {
     return apiClient.put<Todo>(`/todos/${id}`, data);
   },
 

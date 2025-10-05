@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { todoApi } from '../lib/api';
-import type { Priority, Status } from '../lib/api';
+import type { Priority, Status, Group } from '../lib/api';
 
 interface TodoFormProps {
   onTodoCreated: () => void;
+  selectedGroup?: Group | null;
 }
 
-export default function TodoForm({ onTodoCreated }: TodoFormProps) {
+export default function TodoForm({ onTodoCreated, selectedGroup }: TodoFormProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('MEDIUM');
@@ -24,13 +25,19 @@ export default function TodoForm({ onTodoCreated }: TodoFormProps) {
       return;
     }
 
+    if (!selectedGroup) {
+      setError('グループを選択してください');
+      return;
+    }
+
     setIsLoading(true);
 
     const result = await todoApi.create({
       title: title.trim(),
       description: description.trim() || undefined,
       priority: priority,
-      status: status
+      status: status,
+      groupId: selectedGroup.id
     });
 
     if (result.error) {
@@ -134,7 +141,7 @@ export default function TodoForm({ onTodoCreated }: TodoFormProps) {
 
         <button
           type="submit"
-          disabled={isLoading || !title.trim()}
+          disabled={isLoading || !title.trim() || !selectedGroup}
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
         >
           {isLoading ? '追加中...' : 'TODOを追加'}

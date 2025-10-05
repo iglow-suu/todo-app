@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router';
 import type { Route } from "./+types/todos";
-import type { User } from '../lib/api';
+import type { User, Group } from '../lib/api';
 import TodoForm from '../components/TodoForm';
 import TodoList from '../components/TodoList';
+import GroupList from '../components/GroupList';
+import GroupForm from '../components/GroupForm';
 import { AuthStorage } from '../lib/auth';
-import { authApi } from '../lib/api';
+import { authApi, groupApi } from '../lib/api';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -19,6 +21,8 @@ export default function Todos() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [showGroupForm, setShowGroupForm] = useState(false);
 
   // クライアントサイドでのみ認証チェック
   useEffect(() => {
@@ -30,6 +34,32 @@ export default function Todos() {
     }
     setLoading(false);
   }, []);
+
+  // すべてのフックを条件分岐の前に配置
+  const handleGroupSelect = useCallback((group: Group) => {
+    setSelectedGroup(group);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      AuthStorage.logout();
+      window.location.href = '/auth';
+    }
+  };
+
+  const handleTodoCreated = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleGroupCreated = (group: Group) => {
+    setSelectedGroup(group);
+    setShowGroupForm(false);
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   // SSR中またはロード中は何も表示しない
   if (loading || isAuthenticated === null) {
@@ -47,23 +77,6 @@ export default function Todos() {
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
   }
-
-
-  const handleLogout = async () => {
-    try {
-      await authApi.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      AuthStorage.logout();
-      window.location.href = '/auth';
-    }
-  };
-
-
-  const handleTodoCreated = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -99,15 +112,64 @@ export default function Todos() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto p-4 pb-8">
-        <div className="grid gap-6 lg:grid-cols-3">
+      <main className="max-w-7xl mx-auto p-4 pb-8">
+        <div className="grid gap-6 lg:grid-cols-4">
+          {/* グループ選択 */}
+          <div className="lg:col-span-1">
+            <div className="space-y-6">
+              {!showGroupForm ? (
+                <>
+                  <GroupList 
+                    onGroupSelect={handleGroupSelect}
+                    selectedGroupId={selectedGroup?.id}
+                  />
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <button
+                      onClick={() => setShowGroupForm(true)}
+                      className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200"
+                    >
+                      ➕ 新しいグループを作成
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <GroupForm
+                  onGroupCreated={handleGroupCreated}
+                  onCancel={() => setShowGroupForm(false)}
+                />
+              )}
+            </div>
+          </div>
+
           {/* TODO作成フォーム */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
                 ✨ 新しいTODO
               </h2>
-              <TodoForm onTodoCreated={handleTodoCreated} />
+              {selectedGroup ? (
+                <div className="mb-4 p-3 bg-blue-50 rounded-md">
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: selectedGroup.color || '#3B82F6' }}
+                    ></div>
+                    <span className="text-sm font-medium text-blue-800">
+                      {selectedGroup.name}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                  <p className="text-sm text-gray-600">
+                    グループを選択してTODOを作成してください
+                  </p>
+                </div>
+              )}
+              <TodoForm 
+                onTodoCreated={handleTodoCreated}
+                selectedGroup={selectedGroup}
+              />
             </div>
           </div>
 
@@ -116,8 +178,16 @@ export default function Todos() {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
                 📋 TODOリスト
+                {selectedGroup && (
+                  <span className="ml-2 text-sm font-normal text-gray-600">
+                    - {selectedGroup.name}
+                  </span>
+                )}
               </h2>
-              <TodoList refreshTrigger={refreshTrigger} />
+              <TodoList 
+                refreshTrigger={refreshTrigger}
+                selectedGroup={selectedGroup}
+              />
             </div>
           </div>
         </div>

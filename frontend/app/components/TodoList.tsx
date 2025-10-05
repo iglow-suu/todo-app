@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import type { Todo, Priority, Status } from '../lib/api';
+import type { Todo, Priority, Status, Group } from '../lib/api';
 import { todoApi } from '../lib/api';
 import TodoFilter, { type FilterOptions } from './TodoFilter';
 
 interface TodoListProps {
   refreshTrigger: number;
+  selectedGroup?: Group | null;
 }
 
 const getPriorityDisplay = (priority: Priority) => {
@@ -42,7 +43,7 @@ const getPriorityOrder = (priority: Priority) => {
   }
 };
 
-export default function TodoList({ refreshTrigger }: TodoListProps) {
+export default function TodoList({ refreshTrigger, selectedGroup }: TodoListProps) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -176,6 +177,11 @@ export default function TodoList({ refreshTrigger }: TodoListProps) {
   // フィルタリング機能
   const applyFilters = (todoList: Todo[]) => {
     return todoList.filter(todo => {
+      // グループフィルター
+      if (selectedGroup && todo.groupId !== selectedGroup.id) {
+        return false;
+      }
+
       // 優先度フィルター
       if (filters.priority !== 'ALL' && todo.priority !== filters.priority) {
         return false;
@@ -234,7 +240,12 @@ export default function TodoList({ refreshTrigger }: TodoListProps) {
       
       {sortedTodos.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          {todos.length === 0 ? (
+          {!selectedGroup ? (
+            <>
+              <p>グループを選択してください。</p>
+              <p>左側のグループ一覧からグループを選択してTODOを表示します。</p>
+            </>
+          ) : todos.length === 0 ? (
             <>
               <p>まだTODOがありません。</p>
               <p>上のフォームから新しいTODOを追加してみましょう！</p>

@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import todoRoutes from './routes/todos';
+import groupRoutes from './routes/groups';
 
 // Load environment variables
 dotenv.config();
@@ -26,7 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/debug/routes', (req, res) => {
   res.json({ 
     message: 'Debug endpoint working',
-    availableRoutes: ['/api/auth', '/api/todos', '/health', '/']
+    availableRoutes: ['/api/auth', '/api/todos', '/api/groups', '/health', '/']
   });
 });
 
@@ -34,8 +35,10 @@ app.get('/debug/routes', (req, res) => {
 console.log('Setting up routes...');
 console.log('AuthRoutes type:', typeof authRoutes);
 console.log('TodoRoutes type:', typeof todoRoutes);
+console.log('GroupRoutes type:', typeof groupRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/todos', todoRoutes);
+app.use('/api/groups', groupRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
