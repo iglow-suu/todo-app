@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'https://todo-app-zeb7.onrender.com/api';
 
 interface ApiResponse<T = any> {
   data?: T;
