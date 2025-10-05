@@ -19,6 +19,15 @@ class ApiClient {
     const data = await response.json();
     
     if (!response.ok) {
+      // 認証エラーの場合は自動的にログアウト
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // 認証ページにリダイレクト
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth';
+        }
+      }
       return { error: data.error || 'An error occurred' };
     }
     
