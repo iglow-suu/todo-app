@@ -60,10 +60,6 @@ export default function Todos() {
     }
   };
 
-  const handleClearStorage = () => {
-    AuthStorage.clearAll();
-    window.location.reload();
-  };
 
   const handleTodoCreated = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -92,13 +88,6 @@ export default function Todos() {
                 </div>
               </div>
             )}
-            <button
-              onClick={handleClearStorage}
-              className="bg-yellow-600 text-white px-3 py-2 rounded-md hover:bg-yellow-700 transition duration-200 text-sm font-medium"
-              title="認証情報をクリアして再ログイン"
-            >
-              🔄 クリア
-            </button>
             <button
               onClick={handleLogout}
               className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition duration-200 text-sm font-medium"
