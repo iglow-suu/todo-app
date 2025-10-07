@@ -1,41 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Navigate } from 'react-router';
-import type { Route } from "./+types/todos";
-import type { User, Group } from '../lib/api';
+import { useState, useCallback } from 'react';
+import { Navigate, useNavigate } from 'react-router';
+import type { Group } from '../lib/api';
 import TodoForm from '../components/TodoForm';
 import TodoList from '../components/TodoList';
 import GroupList from '../components/GroupList';
 import GroupForm from '../components/GroupForm';
 import { AuthStorage } from '../lib/auth';
-import { authApi, groupApi } from '../lib/api';
-
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "TODO管理 - TODO アプリ" },
-    { name: "description", content: "あなたのTODOを管理しましょう" },
-  ];
-}
+import { authApi } from '../lib/api';
 
 export default function Todos() {
-  const [user, setUser] = useState<User | null>(null);
+  const navigate = useNavigate();
+
+  if (!AuthStorage.isAuthenticated()) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  const user = AuthStorage.getUser();
+
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [showGroupForm, setShowGroupForm] = useState(false);
 
-  // クライアントサイドでのみ認証チェック
-  useEffect(() => {
-    const authenticated = AuthStorage.isAuthenticated();
-    setIsAuthenticated(authenticated);
-    if (authenticated) {
-      const userData = AuthStorage.getUser();
-      setUser(userData);
-    }
-    setLoading(false);
-  }, []);
-
-  // すべてのフックを条件分岐の前に配置
   const handleGroupSelect = useCallback((group: Group) => {
     setSelectedGroup(group);
   }, []);
@@ -47,7 +32,7 @@ export default function Todos() {
       console.error('Logout error:', error);
     } finally {
       AuthStorage.logout();
-      window.location.href = '/auth';
+      navigate('/auth', { replace: true });
     }
   };
 
@@ -64,23 +49,6 @@ export default function Todos() {
   const handleGroupDeleted = () => {
     setRefreshTrigger(prev => prev + 1);
   };
-
-  // SSR中またはロード中は何も表示しない
-  if (loading || isAuthenticated === null) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">読み込み中...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // 認証されていない場合はリダイレクト
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-100">
